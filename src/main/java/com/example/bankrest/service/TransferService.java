@@ -2,7 +2,9 @@ package com.example.bankrest.service;
 
 import com.example.bankrest.entity.Card;
 import com.example.bankrest.entity.Transfer;
+import com.example.bankrest.exception.InsufficientFundsException;
 import com.example.bankrest.repository.TransferRepository;
+import com.example.bankrest.util.ValidationUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,20 +28,31 @@ public class TransferService {
      * @param toCard карта-получатель
      * @param amount сумма перевода
      * @return объект перевода
-     * @throws IllegalArgumentException если карты принадлежат разным пользователям или недостаточно средств
+     * @throws IllegalArgumentException если параметры некорректны или карты принадлежат разным пользователям
      * @throws IllegalStateException если карты не активны
+     * @throws InsufficientFundsException если недостаточно средств
      */
     @Transactional
     public Transfer transferBetweenCards(Card fromCard, Card toCard, BigDecimal amount) {
+        // Validate input parameters using utility methods
+        ValidationUtils.validateNotNull(fromCard, "From card");
+        ValidationUtils.validateNotNull(toCard, "To card");
+        ValidationUtils.validatePositiveAmount(amount, "Amount");
+        
+        // Validate cards belong to the same user
         if (!fromCard.getUser().getId().equals(toCard.getUser().getId())) {
             throw new IllegalArgumentException("Transfers allowed only between own cards");
         }
+        
+        // Validate cards are active
         if (fromCard.getStatus() != com.example.bankrest.entity.CardStatus.ACTIVE ||
             toCard.getStatus() != com.example.bankrest.entity.CardStatus.ACTIVE) {
             throw new IllegalStateException("Both cards must be active");
         }
+        
+        // Validate sufficient funds
         if (fromCard.getBalance().compareTo(amount) < 0) {
-            throw new IllegalArgumentException("Insufficient funds");
+            throw new InsufficientFundsException();
         }
 
         cardService.updateCardBalance(fromCard, fromCard.getBalance().subtract(amount));

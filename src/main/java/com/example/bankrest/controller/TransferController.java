@@ -28,25 +28,34 @@ public class TransferController {
     public ResponseEntity<Transfer> transfer(
             @AuthenticationPrincipal(expression = "username") String username,
             @RequestBody @Valid TransferRequest request) {
-        User user = userService.findByUsername(username).orElseThrow();
+        try {
+            User user = userService.getUserByUsername(username);
 
-        Card fromCard = cardService.getCardById(request.getFromCardId())
-                .orElseThrow(() -> new IllegalArgumentException("From card not found"));
-        Card toCard = cardService.getCardById(request.getToCardId())
-                .orElseThrow(() -> new IllegalArgumentException("To card not found"));
+            Card fromCard = cardService.getCardById(request.getFromCardId());
+            Card toCard = cardService.getCardById(request.getToCardId());
 
-        if (!fromCard.getUser().getId().equals(user.getId()) || !toCard.getUser().getId().equals(user.getId())) {
-            return ResponseEntity.status(403).build();
+            if (!fromCard.getUser().getId().equals(user.getId()) || !toCard.getUser().getId().equals(user.getId())) {
+                return ResponseEntity.status(403).build();
+            }
+
+            Transfer transfer = transferService.transferBetweenCards(fromCard, toCard, request.getAmount());
+            return ResponseEntity.ok(transfer);
+        } catch (Exception e) {
+            // GlobalExceptionHandler will handle specific exceptions
+            throw e;
         }
-
-        Transfer transfer = transferService.transferBetweenCards(fromCard, toCard, request.getAmount());
-        return ResponseEntity.ok(transfer);
     }
 
     @Data
     public static class TransferRequest {
+        @jakarta.validation.constraints.NotNull(message = "From card ID is required")
         private Long fromCardId;
+        
+        @jakarta.validation.constraints.NotNull(message = "To card ID is required")
         private Long toCardId;
+        
+        @jakarta.validation.constraints.NotNull(message = "Amount is required")
+        @jakarta.validation.constraints.DecimalMin(value = "0.01", message = "Amount must be greater than 0")
         private BigDecimal amount;
     }
 }

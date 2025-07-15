@@ -24,10 +24,10 @@ public class JwtUtil {
 
     public String generateToken(String username, Set<String> roles) {
         return Jwts.builder()
-                .setSubject(username)
+                .subject(username)
                 .claim("roles", roles.stream().collect(Collectors.toList()))
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(key)
                 .compact();
     }
@@ -45,7 +45,7 @@ public class JwtUtil {
                     .map(String.class::cast)
                     .collect(Collectors.toSet());
         }
-        return Set.of();
+        return java.util.Collections.emptySet();
     }
 
     public boolean validateToken(String token) {
@@ -58,10 +58,10 @@ public class JwtUtil {
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
+        return Jwts.parser()
+                .verifyWith((javax.crypto.SecretKey) key)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

@@ -1,7 +1,7 @@
 package com.example.bankrest.service;
 
-import jakarta.crypto.Cipher;
-import jakarta.crypto.spec.SecretKeySpec;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +20,12 @@ public class EncryptionService {
      * Конструктор, инициализирующий секретный ключ для AES.
      *
      * @param secret секретный ключ (строка длиной 16 байт)
+     * @throws IllegalArgumentException если секретный ключ некорректен
      */
     public EncryptionService(@Value("${app.encryption.secret}") String secret) {
+        if (secret == null || secret.length() != 16) {
+            throw new IllegalArgumentException("Encryption secret must be exactly 16 characters long");
+        }
         byte[] keyBytes = secret.getBytes();
         this.secretKey = new SecretKeySpec(keyBytes, "AES");
     }
@@ -31,8 +35,13 @@ public class EncryptionService {
      *
      * @param data исходные данные
      * @return зашифрованная строка в Base64
+     * @throws IllegalArgumentException если данные равны null
+     * @throws RuntimeException если произошла ошибка шифрования
      */
     public String encrypt(String data) {
+        if (data == null) {
+            throw new IllegalArgumentException("Data cannot be null");
+        }
         try {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
@@ -48,8 +57,13 @@ public class EncryptionService {
      *
      * @param encryptedData зашифрованные данные в Base64
      * @return исходная строка
+     * @throws IllegalArgumentException если данные равны null
+     * @throws RuntimeException если произошла ошибка дешифрования
      */
     public String decrypt(String encryptedData) {
+        if (encryptedData == null) {
+            throw new IllegalArgumentException("Encrypted data cannot be null");
+        }
         try {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, secretKey);

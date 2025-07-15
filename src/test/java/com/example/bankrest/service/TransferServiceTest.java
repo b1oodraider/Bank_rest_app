@@ -88,7 +88,7 @@ class TransferServiceTest {
         BigDecimal amount = new BigDecimal("2000");
 
         assertThatThrownBy(() -> transferService.transferBetweenCards(fromCard, toCard, amount))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(com.example.bankrest.exception.InsufficientFundsException.class)
                 .hasMessageContaining("Insufficient funds");
     }
 }

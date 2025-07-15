@@ -9,6 +9,7 @@ import org.springframework.data.domain.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 
@@ -25,48 +26,83 @@ public class CardController {
             @AuthenticationPrincipal(expression = "username") String username,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        User user = userService.findByUsername(username).orElseThrow();
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Card> cards = cardService.getCardsByUser(user, pageable);
-        return ResponseEntity.ok(cards);
+        try {
+            User user = userService.getUserByUsername(username);
+            // Validate pagination parameters
+            if (page < 0) {
+                page = 0;
+            }
+            if (size < 1) {
+                size = 10;
+            }
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Card> cards = cardService.getCardsByUser(user, pageable);
+            return ResponseEntity.ok(cards);
+        } catch (Exception e) {
+            // GlobalExceptionHandler will handle specific exceptions
+            throw e;
+        }
     }
 
     @PostMapping
     public ResponseEntity<Card> createCard(
             @AuthenticationPrincipal(expression = "username") String username,
             @RequestBody @Valid CreateCardRequest request) {
-        User user = userService.findByUsername(username).orElseThrow();
-        Card card = cardService.createCard(request.getCardNumber(), request.getOwner(), request.getExpiryDate(), user);
-        return ResponseEntity.ok(card);
+        try {
+            User user = userService.getUserByUsername(username);
+            Card card = cardService.createCard(request.getCardNumber(), request.getOwner(), request.getExpiryDate(), user);
+            return ResponseEntity.ok(card);
+        } catch (Exception e) {
+            // GlobalExceptionHandler will handle specific exceptions
+            throw e;
+        }
     }
 
     @PostMapping("/{id}/block")
     public ResponseEntity<Void> blockCard(@PathVariable Long id) {
-        cardService.blockCard(id);
-        return ResponseEntity.ok().build();
+        try {
+            cardService.blockCard(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            // GlobalExceptionHandler will handle specific exceptions
+            throw e;
+        }
     }
 
     @PostMapping("/{id}/activate")
     public ResponseEntity<Void> activateCard(@PathVariable Long id) {
-        cardService.activateCard(id);
-        return ResponseEntity.ok().build();
+        try {
+            cardService.activateCard(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            // GlobalExceptionHandler will handle specific exceptions
+            throw e;
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
-        cardService.deleteCard(id);
-        return ResponseEntity.ok().build();
+        try {
+            cardService.deleteCard(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            // GlobalExceptionHandler will handle specific exceptions
+            throw e;
+        }
     }
 
     @Data
     public static class CreateCardRequest {
-        @jakarta.validation.constraints.NotBlank
+        @NotBlank(message = "Card number is required")
+        @Pattern(regexp = "^\\d{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{4}$", message = "Card number must be 16 digits with optional spaces")
         private String cardNumber;
 
-        @jakarta.validation.constraints.NotBlank
+        @NotBlank(message = "Owner name is required")
+        @Size(min = 2, max = 100, message = "Owner name must be between 2 and 100 characters")
         private String owner;
 
-        @jakarta.validation.constraints.NotNull
+        @NotNull(message = "Expiry date is required")
+        @Future(message = "Expiry date must be in the future")
         private LocalDate expiryDate;
     }
 }

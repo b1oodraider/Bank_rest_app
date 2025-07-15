@@ -1,9 +1,13 @@
 package com.example.bankrest.service;
 
 import com.example.bankrest.entity.*;
+import com.example.bankrest.exception.CardNotFoundException;
 import com.example.bankrest.repository.CardRepository;
+import com.example.bankrest.util.ValidationUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,9 +41,22 @@ public class CardService {
      * Получить карту по идентификатору.
      *
      * @param id идентификатор карты
+     * @return карта
+     * @throws CardNotFoundException если карта не найдена
+     */
+    @Cacheable(value = "cards", key = "#id")
+    public Card getCardById(Long id) {
+        return cardRepository.findById(id)
+                .orElseThrow(() -> new CardNotFoundException(id));
+    }
+
+    /**
+     * Получить карту по идентификатору (Optional).
+     *
+     * @param id идентификатор карты
      * @return Optional с картой или пустой, если не найдена
      */
-    public Optional<Card> getCardById(Long id) {
+    public Optional<Card> findCardById(Long id) {
         return cardRepository.findById(id);
     }
 
@@ -51,15 +68,24 @@ public class CardService {
      * @param expiryDate дата окончания действия
      * @param user владелец (пользователь)
      * @return созданная карта
+     * @throws IllegalArgumentException если параметры некорректны
      */
     @Transactional
+    @CacheEvict(value = "cards", allEntries = true)
     public Card createCard(String cardNumber, String owner, LocalDate expiryDate, User user) {
+        // Validate input parameters using utility methods
+        ValidationUtils.validateCardNumber(cardNumber);
+        ValidationUtils.validateNotNullOrEmpty(owner, "Owner");
+        ValidationUtils.validateNotNull(expiryDate, "Expiry date");
+        ValidationUtils.validateNotNull(user, "User");
+        ValidationUtils.validateFutureDate(expiryDate, "Expiry date");
+        
         String encryptedNumber = encryptionService.encrypt(cardNumber);
         String maskedNumber = maskCardNumber(cardNumber);
         Card card = Card.builder()
                 .encryptedNumber(encryptedNumber)
                 .maskedNumber(maskedNumber)
-                .owner(owner)
+                .owner(owner.trim())
                 .expiryDate(expiryDate)
                 .status(CardStatus.ACTIVE)
                 .balance(BigDecimal.ZERO)
@@ -72,26 +98,28 @@ public class CardService {
      * Заблокировать карту по идентификатору.
      *
      * @param cardId идентификатор карты
+     * @throws CardNotFoundException если карта не найдена
      */
     @Transactional
+    @CacheEvict(value = "cards", key = "#cardId")
     public void blockCard(Long cardId) {
-        cardRepository.findById(cardId).ifPresent(card -> {
-            card.setStatus(CardStatus.BLOCKED);
-            cardRepository.save(card);
-        });
+        Card card = getCardById(cardId);
+        card.setStatus(CardStatus.BLOCKED);
+        cardRepository.save(card);
     }
 
     /**
      * Активировать карту по идентификатору.
      *
      * @param cardId идентификатор карты
+     * @throws CardNotFoundException если карта не найдена
      */
     @Transactional
+    @CacheEvict(value = "cards", key = "#cardId")
     public void activateCard(Long cardId) {
-        cardRepository.findById(cardId).ifPresent(card -> {
-            card.setStatus(CardStatus.ACTIVE);
-            cardRepository.save(card);
-        });
+        Card card = getCardById(cardId);
+        card.setStatus(CardStatus.ACTIVE);
+        cardRepository.save(card);
     }
 
     /**
@@ -100,6 +128,7 @@ public class CardService {
      * @param cardId идентификатор карты
      */
     @Transactional
+    @CacheEvict(value = "cards", key = "#cardId")
     public void deleteCard(Long cardId) {
         cardRepository.deleteById(cardId);
     }
@@ -126,6 +155,7 @@ public class CardService {
      * @param newBalance новый баланс
      */
     @Transactional
+    @CacheEvict(value = "cards", key = "#card.id")
     public void updateCardBalance(Card card, BigDecimal newBalance) {
         card.setBalance(newBalance);
         cardRepository.save(card);

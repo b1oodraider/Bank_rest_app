@@ -1,1 +1,508 @@
-# Здесь будет OpenAPI описание всех доступных эндпоинтов и моделей данных.
+openapi: 3.0.3
+info:
+  title: Bank Card Management API
+  description: REST API for managing bank cards, users, and transfers
+  version: 1.0.0
+  contact:
+    name: Bank REST API Support
+    email: support@bankrest.com
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.bankrest.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user and get JWT token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+        '400':
+          description: Invalid request data
+
+  /api/cards:
+    get:
+      tags:
+        - Cards
+      summary: Get user's cards with pagination
+      operationId: getUserCards
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (0-based)
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Page size
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: List of user's cards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardPage'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+    post:
+      tags:
+        - Cards
+      summary: Create a new card (Admin only)
+      operationId: createCard
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardRequest'
+      responses:
+        '200':
+          description: Card created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+        '400':
+          description: Invalid request data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin role required
+
+  /api/cards/{id}/block:
+    post:
+      tags:
+        - Cards
+      summary: Block a card
+      operationId: blockCard
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Card blocked successfully
+        '404':
+          description: Card not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/cards/{id}/activate:
+    post:
+      tags:
+        - Cards
+      summary: Activate a card
+      operationId: activateCard
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Card activated successfully
+        '404':
+          description: Card not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/cards/{id}:
+    delete:
+      tags:
+        - Cards
+      summary: Delete a card (Admin only)
+      operationId: deleteCard
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Card deleted successfully
+        '404':
+          description: Card not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin role required
+
+  /api/transfers:
+    post:
+      tags:
+        - Transfers
+      summary: Transfer money between own cards
+      operationId: transfer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Transfer completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '400':
+          description: Invalid request data or insufficient funds
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Cards must belong to the user
+        '404':
+          description: Card not found
+
+  /api/users:
+    post:
+      tags:
+        - Users
+      summary: Create a new user (Admin only)
+      operationId: createUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin role required
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: User's username
+          example: "user123"
+        password:
+          type: string
+          description: User's password
+          example: "password123"
+
+    AuthResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: JWT token for authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    Card:
+      type: object
+      required:
+        - id
+        - maskedNumber
+        - owner
+        - expiryDate
+        - status
+        - balance
+        - userId
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Card ID
+          example: 1
+        maskedNumber:
+          type: string
+          description: Masked card number
+          example: "**** **** **** 1234"
+        owner:
+          type: string
+          description: Card owner name
+          example: "John Doe"
+        expiryDate:
+          type: string
+          format: date
+          description: Card expiry date
+          example: "2025-12-31"
+        status:
+          type: string
+          enum: [ACTIVE, BLOCKED, EXPIRED]
+          description: Card status
+          example: "ACTIVE"
+        balance:
+          type: number
+          format: decimal
+          description: Card balance
+          example: 1000.50
+        userId:
+          type: integer
+          format: int64
+          description: User ID who owns the card
+          example: 1
+
+    CardPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Card'
+        totalElements:
+          type: integer
+          description: Total number of elements
+        totalPages:
+          type: integer
+          description: Total number of pages
+        size:
+          type: integer
+          description: Page size
+        number:
+          type: integer
+          description: Current page number
+
+    CreateCardRequest:
+      type: object
+      required:
+        - cardNumber
+        - owner
+        - expiryDate
+      properties:
+        cardNumber:
+          type: string
+          description: Card number (16 digits)
+          pattern: '^\\d{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{4}$'
+          example: "1234 5678 9012 3456"
+        owner:
+          type: string
+          description: Card owner name
+          minLength: 2
+          maxLength: 100
+          example: "John Doe"
+        expiryDate:
+          type: string
+          format: date
+          description: Card expiry date (must be in the future)
+          example: "2025-12-31"
+
+    Transfer:
+      type: object
+      required:
+        - id
+        - fromCardId
+        - toCardId
+        - amount
+        - timestamp
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Transfer ID
+          example: 1
+        fromCardId:
+          type: integer
+          format: int64
+          description: Source card ID
+          example: 1
+        toCardId:
+          type: integer
+          format: int64
+          description: Destination card ID
+          example: 2
+        amount:
+          type: number
+          format: decimal
+          description: Transfer amount
+          example: 100.00
+        timestamp:
+          type: string
+          format: date-time
+          description: Transfer timestamp
+          example: "2024-01-15T10:30:00"
+
+    TransferRequest:
+      type: object
+      required:
+        - fromCardId
+        - toCardId
+        - amount
+      properties:
+        fromCardId:
+          type: integer
+          format: int64
+          description: Source card ID
+          example: 1
+        toCardId:
+          type: integer
+          format: int64
+          description: Destination card ID
+          example: 2
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Transfer amount (must be greater than 0)
+          example: 100.00
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - roles
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: User ID
+          example: 1
+        username:
+          type: string
+          description: Username
+          example: "user123"
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [ROLE_ADMIN, ROLE_USER]
+          description: User roles
+          example: ["ROLE_USER"]
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - password
+        - roles
+      properties:
+        username:
+          type: string
+          description: Username (3-50 characters, alphanumeric and underscore only)
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_]+$'
+          example: "user123"
+        password:
+          type: string
+          description: Password (minimum 6 characters)
+          minLength: 6
+          example: "password123"
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [ROLE_ADMIN, ROLE_USER]
+          description: User roles
+          example: ["ROLE_USER"]
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+        status:
+          type: integer
+          description: HTTP status code
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Error message
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+        status:
+          type: integer
+          description: HTTP status code
+        error:
+          type: string
+          description: Error type
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Validation error details

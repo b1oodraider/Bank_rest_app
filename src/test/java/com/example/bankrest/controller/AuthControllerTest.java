@@ -12,7 +12,6 @@ import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 
 import java.util.Optional;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -47,14 +46,14 @@ class AuthControllerTest {
 
         User user = User.builder()
                 .username("user")
-                .roles(Set.of(Role.ROLE_USER))
+                .roles(java.util.Collections.singleton(Role.ROLE_USER))
                 .build();
-        when(userService.findByUsername("user")).thenReturn(Optional.of(user));
+        when(userService.getUserByUsername("user")).thenReturn(user);
         when(jwtUtil.generateToken(eq("user"), anySet())).thenReturn("token");
 
         ResponseEntity<?> response = authController.login(request);
 
-        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).isInstanceOf(AuthController.AuthResponse.class);
         AuthController.AuthResponse authResponse = (AuthController.AuthResponse) response.getBody();
         assertThat(authResponse.getToken()).isEqualTo("token");

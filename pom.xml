@@ -18,6 +18,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <liquibase.version>4.32.0</liquibase.version>
         <swagger.version>3.0.0</swagger.version>
+        <postgresql.version>42.7.7</postgresql.version>
+        <springdoc.version>2.9.0</springdoc.version>
     </properties>
 
     <dependencyManagement>
@@ -125,6 +127,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>5.2.0</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -142,6 +151,26 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <!-- Maven Surefire Plugin with Mockito Agent Configuration -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+
+                    <systemPropertyVariables>
+                        <jdk.instrument.traceUsage>false</jdk.instrument.traceUsage>
+                    </systemPropertyVariables>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.mockito</groupId>
+                        <artifactId>mockito-inline</artifactId>
+                        <version>5.2.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
         </plugins>
     </build>
 

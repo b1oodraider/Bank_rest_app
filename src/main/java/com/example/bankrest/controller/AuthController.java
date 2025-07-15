@@ -1,6 +1,5 @@
 package com.example.bankrest.controller;
 
-import com.example.bankrest.entity.Role;
 import com.example.bankrest.entity.User;
 import com.example.bankrest.security.JwtUtil;
 import com.example.bankrest.service.UserService;
@@ -35,21 +34,29 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid AuthRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
 
-        User user = userService.findByUsername(request.getUsername()).orElseThrow();
+            User user = userService.getUserByUsername(request.getUsername());
 
-        Set<String> roles = user.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
-        String token = jwtUtil.generateToken(user.getUsername(), roles);
+            Set<String> roles = user.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
+            String token = jwtUtil.generateToken(user.getUsername(), roles);
 
-        return ResponseEntity.ok(new AuthResponse(token));
+            return ResponseEntity.ok(new AuthResponse(token));
+        } catch (Exception e) {
+            // GlobalExceptionHandler will handle specific exceptions
+            throw e;
+        }
     }
 
     @Data
     public static class AuthRequest {
+        @jakarta.validation.constraints.NotBlank(message = "Username is required")
         private String username;
+        
+        @jakarta.validation.constraints.NotBlank(message = "Password is required")
         private String password;
     }
 

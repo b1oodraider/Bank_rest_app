@@ -1,8 +1,11 @@
 package com.example.bankrest.service;
 
 import com.example.bankrest.entity.User;
+import com.example.bankrest.exception.UserNotFoundException;
 import com.example.bankrest.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +33,18 @@ public class UserService {
     }
 
     /**
+     * Получить пользователя по имени пользователя.
+     *
+     * @param username имя пользователя
+     * @return пользователь
+     * @throws UserNotFoundException если пользователь не найден
+     */
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+    }
+
+    /**
      * Создает нового пользователя с заданными ролями и зашифрованным паролем.
      *
      * @param username имя пользователя
@@ -46,5 +61,25 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // Дополнительные методы управления пользователями для ADMIN
+    /**
+     * Получить страницы пользователей с пагинацией (только для администраторов).
+     *
+     * @param pageable параметры пагинации
+     * @return страница пользователей
+     */
+    public Page<User> getUsers(Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+
+    /**
+     * Получить пользователя по идентификатору.
+     *
+     * @param id идентификатор пользователя
+     * @return пользователь
+     * @throws UserNotFoundException если пользователь не найден
+     */
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User with id " + id + " not found"));
+    }
 }

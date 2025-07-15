@@ -9,7 +9,6 @@ import org.mockito.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -48,7 +47,7 @@ class UserServiceTest {
         when(passwordEncoder.encode(rawPassword)).thenReturn(encodedPassword);
         when(userRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        User user = userService.createUser("user1", rawPassword, Set.of(Role.ROLE_USER));
+        User user = userService.createUser("user1", rawPassword, java.util.Collections.singleton(Role.ROLE_USER));
 
         assertThat(user.getUsername()).isEqualTo("user1");
         assertThat(user.getPassword()).isEqualTo(encodedPassword);
