@@ -26,69 +26,44 @@ public class CardController {
             @AuthenticationPrincipal(expression = "username") String username,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        try {
-            User user = userService.getUserByUsername(username);
-            // Validate pagination parameters
-            if (page < 0) {
-                page = 0;
-            }
-            if (size < 1) {
-                size = 10;
-            }
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Card> cards = cardService.getCardsByUser(user, pageable);
-            return ResponseEntity.ok(cards);
-        } catch (Exception e) {
-            // GlobalExceptionHandler will handle specific exceptions
-            throw e;
+        User user = userService.getUserByUsername(username);
+        // Validate pagination parameters
+        if (page < 0) {
+            page = 0;
         }
+        if (size < 1) {
+            size = 10;
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Card> cards = cardService.getCardsByUser(user, pageable);
+        return ResponseEntity.ok(cards);
     }
 
     @PostMapping
     public ResponseEntity<Card> createCard(
             @AuthenticationPrincipal(expression = "username") String username,
             @RequestBody @Valid CreateCardRequest request) {
-        try {
-            User user = userService.getUserByUsername(username);
-            Card card = cardService.createCard(request.getCardNumber(), request.getOwner(), request.getExpiryDate(), user);
-            return ResponseEntity.ok(card);
-        } catch (Exception e) {
-            // GlobalExceptionHandler will handle specific exceptions
-            throw e;
-        }
+        User user = userService.getUserByUsername(username);
+        Card card = cardService.createCard(request.getCardNumber(), request.getOwner(), request.getExpiryDate(), user);
+        return ResponseEntity.ok(card);
     }
 
     @PostMapping("/{id}/block")
     public ResponseEntity<Void> blockCard(@PathVariable Long id) {
-        try {
-            cardService.blockCard(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            // GlobalExceptionHandler will handle specific exceptions
-            throw e;
-        }
+        cardService.blockCard(id);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/activate")
     public ResponseEntity<Void> activateCard(@PathVariable Long id) {
-        try {
-            cardService.activateCard(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            // GlobalExceptionHandler will handle specific exceptions
-            throw e;
-        }
+        cardService.activateCard(id);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
-        try {
-            cardService.deleteCard(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            // GlobalExceptionHandler will handle specific exceptions
-            throw e;
-        }
+        cardService.deleteCard(id);
+        return ResponseEntity.ok().build();
     }
 
     @Data

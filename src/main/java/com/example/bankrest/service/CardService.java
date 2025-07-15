@@ -6,8 +6,6 @@ import com.example.bankrest.repository.CardRepository;
 import com.example.bankrest.util.ValidationUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -44,7 +42,6 @@ public class CardService {
      * @return карта
      * @throws CardNotFoundException если карта не найдена
      */
-    @Cacheable(value = "cards", key = "#id")
     public Card getCardById(Long id) {
         return cardRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException(id));
@@ -71,7 +68,6 @@ public class CardService {
      * @throws IllegalArgumentException если параметры некорректны
      */
     @Transactional
-    @CacheEvict(value = "cards", allEntries = true)
     public Card createCard(String cardNumber, String owner, LocalDate expiryDate, User user) {
         // Validate input parameters using utility methods
         ValidationUtils.validateCardNumber(cardNumber);
@@ -101,7 +97,6 @@ public class CardService {
      * @throws CardNotFoundException если карта не найдена
      */
     @Transactional
-    @CacheEvict(value = "cards", key = "#cardId")
     public void blockCard(Long cardId) {
         Card card = getCardById(cardId);
         card.setStatus(CardStatus.BLOCKED);
@@ -115,7 +110,6 @@ public class CardService {
      * @throws CardNotFoundException если карта не найдена
      */
     @Transactional
-    @CacheEvict(value = "cards", key = "#cardId")
     public void activateCard(Long cardId) {
         Card card = getCardById(cardId);
         card.setStatus(CardStatus.ACTIVE);
@@ -128,7 +122,6 @@ public class CardService {
      * @param cardId идентификатор карты
      */
     @Transactional
-    @CacheEvict(value = "cards", key = "#cardId")
     public void deleteCard(Long cardId) {
         cardRepository.deleteById(cardId);
     }
@@ -155,7 +148,6 @@ public class CardService {
      * @param newBalance новый баланс
      */
     @Transactional
-    @CacheEvict(value = "cards", key = "#card.id")
     public void updateCardBalance(Card card, BigDecimal newBalance) {
         card.setBalance(newBalance);
         cardRepository.save(card);

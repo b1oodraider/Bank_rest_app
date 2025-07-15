@@ -8,9 +8,8 @@ import lombok.*;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.constraints.*;
 import java.util.Set;
 
 /**
@@ -34,29 +33,24 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid AuthRequest request) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-            );
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+        );
 
-            User user = userService.getUserByUsername(request.getUsername());
+        User user = userService.getUserByUsername(request.getUsername());
 
-            Set<String> roles = user.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
-            String token = jwtUtil.generateToken(user.getUsername(), roles);
+        Set<String> roles = user.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
+        String token = jwtUtil.generateToken(user.getUsername(), roles);
 
-            return ResponseEntity.ok(new AuthResponse(token));
-        } catch (Exception e) {
-            // GlobalExceptionHandler will handle specific exceptions
-            throw e;
-        }
+        return ResponseEntity.ok(new AuthResponse(token));
     }
 
     @Data
     public static class AuthRequest {
-        @jakarta.validation.constraints.NotBlank(message = "Username is required")
+        @NotBlank(message = "Username is required")
         private String username;
         
-        @jakarta.validation.constraints.NotBlank(message = "Password is required")
+        @NotBlank(message = "Password is required")
         private String password;
     }
 

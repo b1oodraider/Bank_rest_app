@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,7 +26,7 @@ public class JwtUtil {
     public String generateToken(String username, Set<String> roles) {
         return Jwts.builder()
                 .subject(username)
-                .claim("roles", roles.stream().collect(Collectors.toList()))
+                .claim("roles", new ArrayList<>(roles))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(key)

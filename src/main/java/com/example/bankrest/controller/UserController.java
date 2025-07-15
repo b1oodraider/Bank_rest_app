@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.constraints.*;
 import java.util.Set;
 
 /**
@@ -70,16 +70,16 @@ public class UserController {
 
     @Data
     public static class CreateUserRequest {
-        @jakarta.validation.constraints.NotBlank(message = "Username is required")
-        @jakarta.validation.constraints.Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-        @jakarta.validation.constraints.Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers, and underscores")
+        @NotBlank(message = "Username is required")
+        @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+        @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers, and underscores")
         private String username;
         
-        @jakarta.validation.constraints.NotBlank(message = "Password is required")
-        @jakarta.validation.constraints.Size(min = 6, message = "Password must be at least 6 characters long")
+        @NotBlank(message = "Password is required")
+        @Size(min = 6, message = "Password must be at least 6 characters long")
         private String password;
         
-        @jakarta.validation.constraints.NotEmpty(message = "At least one role is required")
+        @NotEmpty(message = "At least one role is required")
         private Set<Role> roles;
     }
 }
