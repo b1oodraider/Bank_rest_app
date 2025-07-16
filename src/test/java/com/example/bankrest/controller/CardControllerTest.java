@@ -29,7 +29,7 @@ import jakarta.validation.ValidatorFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Arrays;
+
 import java.util.Collections;
 import java.util.Set;
 
@@ -94,7 +94,7 @@ class CardControllerTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getContent()).hasSize(1);
-            assertThat(response.getBody().getContent().get(0).getOwner()).isEqualTo("Test User");
+            assertThat(response.getBody().getContent().getFirst().getOwner()).isEqualTo("Test User");
             verify(cardService).getCardsByUser(user, PageRequest.of(0, 10));
         }
 
