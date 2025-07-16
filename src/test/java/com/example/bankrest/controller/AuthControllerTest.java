@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -31,8 +30,10 @@ class AuthControllerTest {
     private AuthController authController;
 
     @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
+    void setup() throws Exception {
+        try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
+            // Mock initialization complete
+        }
     }
 
     @Test

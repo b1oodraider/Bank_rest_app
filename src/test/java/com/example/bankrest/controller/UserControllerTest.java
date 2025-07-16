@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -28,8 +30,10 @@ class UserControllerTest {
     private User testUser;
 
     @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
+    void setup() throws Exception {
+        try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
+            // Mock initialization complete
+        }
         
         testUser = User.builder()
                 .id(1L)
@@ -77,13 +81,13 @@ class UserControllerTest {
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).isEqualTo(adminUser);
-        assertThat(response.getBody().getRoles()).contains(Role.ROLE_ADMIN);
+        assertThat(Objects.requireNonNull(response.getBody()).getRoles()).contains(Role.ROLE_ADMIN);
     }
 
     @Test
     void getUsers_returnsPageOfUsers() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<User> userPage = new PageImpl<>(Arrays.asList(testUser), pageable, 1);
+        Page<User> userPage = new PageImpl<>(Collections.singletonList(testUser), pageable, 1);
 
         when(userService.getUsers(pageable)).thenReturn(userPage);
 
@@ -92,14 +96,14 @@ class UserControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getContent()).hasSize(1);
-        assertThat(response.getBody().getContent().get(0)).isEqualTo(testUser);
+        assertThat(response.getBody().getContent().getFirst()).isEqualTo(testUser);
         verify(userService).getUsers(pageable);
     }
 
     @Test
     void getUsers_withPagination_returnsCorrectPage() {
         Pageable pageable = PageRequest.of(1, 5);
-        Page<User> userPage = new PageImpl<>(Arrays.asList(testUser), pageable, 1);
+        Page<User> userPage = new PageImpl<>(Collections.singletonList(testUser), pageable, 1);
 
         when(userService.getUsers(pageable)).thenReturn(userPage);
 
@@ -115,12 +119,12 @@ class UserControllerTest {
     void createUserRequest_validation() {
         UserController.CreateUserRequest request = new UserController.CreateUserRequest();
         
-        // Test null values
+        
         assertThat(request.getUsername()).isNull();
         assertThat(request.getPassword()).isNull();
         assertThat(request.getRoles()).isNull();
         
-        // Test setters
+        
         request.setUsername("testuser");
         request.setPassword("password123");
         request.setRoles(java.util.Collections.singleton(Role.ROLE_USER));
@@ -133,8 +137,8 @@ class UserControllerTest {
     @Test
     void createUser_withInvalidRequest_throwsException() {
         UserController.CreateUserRequest request = new UserController.CreateUserRequest();
-        request.setUsername(""); // Invalid username
-        request.setPassword("123"); // Too short password
+        request.setUsername(""); 
+        request.setPassword("123"); 
         request.setRoles(java.util.Collections.singleton(Role.ROLE_USER));
 
         when(userService.createUser(any(), any(), any()))

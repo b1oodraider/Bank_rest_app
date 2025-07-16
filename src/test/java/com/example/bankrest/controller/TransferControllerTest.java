@@ -59,11 +59,11 @@ class TransferControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Setup validator for validation tests
+        
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
         
-        // Setup test data
+        
         user = User.builder()
                 .id(1L)
                 .username("testuser")
@@ -108,7 +108,7 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should successfully transfer between cards")
         void transfer_successfulTransfer_returnsTransfer() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
@@ -119,10 +119,10 @@ class TransferControllerTest {
             when(cardService.getCardById(2L)).thenReturn(toCard);
             when(transferService.transferBetweenCards(fromCard, toCard, request.getAmount())).thenReturn(transfer);
 
-            // When
+            
             ResponseEntity<Transfer> response = transferController.transfer("testuser", request);
 
-            // Then
+            
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
             assertThat(response.getBody()).isEqualTo(transfer);
             verify(transferService).transferBetweenCards(fromCard, toCard, request.getAmount());
@@ -131,7 +131,7 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should handle minimum transfer amount")
         void transfer_minimumAmount_success() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
@@ -142,10 +142,10 @@ class TransferControllerTest {
             when(cardService.getCardById(2L)).thenReturn(toCard);
             when(transferService.transferBetweenCards(fromCard, toCard, request.getAmount())).thenReturn(transfer);
 
-            // When
+            
             ResponseEntity<Transfer> response = transferController.transfer("testuser", request);
 
-            // Then
+            
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         }
     }
@@ -157,7 +157,7 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should return forbidden when from card belongs to different user")
         void transfer_fromCardDifferentUser_returnsForbidden() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
@@ -170,10 +170,10 @@ class TransferControllerTest {
             when(cardService.getCardById(1L)).thenReturn(otherUserCard);
             when(cardService.getCardById(2L)).thenReturn(toCard);
 
-            // When
+            
             ResponseEntity<Transfer> response = transferController.transfer("testuser", request);
 
-            // Then
+            
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
             verify(transferService, never()).transferBetweenCards(any(), any(), any());
         }
@@ -181,7 +181,7 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should return forbidden when to card belongs to different user")
         void transfer_toCardDifferentUser_returnsForbidden() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
@@ -194,10 +194,10 @@ class TransferControllerTest {
             when(cardService.getCardById(1L)).thenReturn(fromCard);
             when(cardService.getCardById(2L)).thenReturn(otherUserCard);
 
-            // When
+            
             ResponseEntity<Transfer> response = transferController.transfer("testuser", request);
 
-            // Then
+            
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
             verify(transferService, never()).transferBetweenCards(any(), any(), any());
         }
@@ -210,7 +210,7 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should propagate UserNotFoundException")
         void transfer_userNotFound_throwsException() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
@@ -218,7 +218,7 @@ class TransferControllerTest {
 
             when(userService.getUserByUsername("testuser")).thenThrow(new UserNotFoundException("User not found"));
 
-            // When & Then
+            
             assertThatThrownBy(() -> transferController.transfer("testuser", request))
                     .isInstanceOf(UserNotFoundException.class)
                     .hasMessage("User not found");
@@ -227,7 +227,7 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should propagate CardNotFoundException")
         void transfer_cardNotFound_throwsException() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
@@ -236,7 +236,7 @@ class TransferControllerTest {
             when(userService.getUserByUsername("testuser")).thenReturn(user);
             when(cardService.getCardById(1L)).thenThrow(new CardNotFoundException("Card not found"));
 
-            // When & Then
+            
             assertThatThrownBy(() -> transferController.transfer("testuser", request))
                     .isInstanceOf(CardNotFoundException.class)
                     .hasMessage("Card not found");
@@ -245,11 +245,11 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should propagate InsufficientFundsException")
         void transfer_insufficientFunds_throwsException() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
-            request.setAmount(new BigDecimal("2000.00")); // More than balance
+            request.setAmount(new BigDecimal("2000.00")); 
 
             when(userService.getUserByUsername("testuser")).thenReturn(user);
             when(cardService.getCardById(1L)).thenReturn(fromCard);
@@ -257,7 +257,7 @@ class TransferControllerTest {
             when(transferService.transferBetweenCards(fromCard, toCard, request.getAmount()))
                     .thenThrow(new InsufficientFundsException());
 
-            // When & Then
+            
             assertThatThrownBy(() -> transferController.transfer("testuser", request))
                     .isInstanceOf(InsufficientFundsException.class);
         }
@@ -265,11 +265,11 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should propagate IllegalArgumentException")
         void transfer_invalidAmount_throwsException() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
-            request.setAmount(new BigDecimal("-100.50")); // Negative amount
+            request.setAmount(new BigDecimal("-100.50")); 
 
             when(userService.getUserByUsername("testuser")).thenReturn(user);
             when(cardService.getCardById(1L)).thenReturn(fromCard);
@@ -277,7 +277,7 @@ class TransferControllerTest {
             when(transferService.transferBetweenCards(fromCard, toCard, request.getAmount()))
                     .thenThrow(new IllegalArgumentException("Invalid amount"));
 
-            // When & Then
+            
             assertThatThrownBy(() -> transferController.transfer("testuser", request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Invalid amount");
@@ -291,32 +291,32 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should validate TransferRequest with valid data")
         void transferRequest_validData_noViolations() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
             request.setAmount(new BigDecimal("100.50"));
 
-            // When
+            
             Set<ConstraintViolation<TransferController.TransferRequest>> violations = validator.validate(request);
 
-            // Then
+            
             assertThat(violations).isEmpty();
         }
 
         @Test
         @DisplayName("Should fail validation when fromCardId is null")
         void transferRequest_nullFromCardId_hasViolations() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(null);
             request.setToCardId(2L);
             request.setAmount(new BigDecimal("100.50"));
 
-            // When
+            
             Set<ConstraintViolation<TransferController.TransferRequest>> violations = validator.validate(request);
 
-            // Then
+            
             assertThat(violations).hasSize(1);
             assertThat(violations.iterator().next().getMessage()).isEqualTo("From card ID is required");
         }
@@ -324,16 +324,16 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should fail validation when toCardId is null")
         void transferRequest_nullToCardId_hasViolations() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(null);
             request.setAmount(new BigDecimal("100.50"));
 
-            // When
+            
             Set<ConstraintViolation<TransferController.TransferRequest>> violations = validator.validate(request);
 
-            // Then
+            
             assertThat(violations).hasSize(1);
             assertThat(violations.iterator().next().getMessage()).isEqualTo("To card ID is required");
         }
@@ -341,16 +341,16 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should fail validation when amount is null")
         void transferRequest_nullAmount_hasViolations() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
             request.setAmount(null);
 
-            // When
+            
             Set<ConstraintViolation<TransferController.TransferRequest>> violations = validator.validate(request);
 
-            // Then
+            
             assertThat(violations).hasSize(1);
             assertThat(violations.iterator().next().getMessage()).isEqualTo("Amount is required");
         }
@@ -358,16 +358,16 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should fail validation when amount is zero")
         void transferRequest_zeroAmount_hasViolations() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
             request.setAmount(BigDecimal.ZERO);
 
-            // When
+            
             Set<ConstraintViolation<TransferController.TransferRequest>> violations = validator.validate(request);
 
-            // Then
+            
             assertThat(violations).hasSize(1);
             assertThat(violations.iterator().next().getMessage()).isEqualTo("Amount must be greater than 0");
         }
@@ -375,16 +375,16 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should fail validation when amount is negative")
         void transferRequest_negativeAmount_hasViolations() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
             request.setAmount(new BigDecimal("-100.50"));
 
-            // When
+            
             Set<ConstraintViolation<TransferController.TransferRequest>> violations = validator.validate(request);
 
-            // Then
+            
             assertThat(violations).hasSize(1);
             assertThat(violations.iterator().next().getMessage()).isEqualTo("Amount must be greater than 0");
         }
@@ -392,16 +392,16 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should pass validation with minimum amount")
         void transferRequest_minimumAmount_noViolations() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
             request.setToCardId(2L);
             request.setAmount(new BigDecimal("0.01"));
 
-            // When
+            
             Set<ConstraintViolation<TransferController.TransferRequest>> violations = validator.validate(request);
 
-            // Then
+            
             assertThat(violations).isEmpty();
         }
     }
@@ -413,10 +413,10 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should handle same card transfer")
         void transfer_sameCard_throwsException() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             request.setFromCardId(1L);
-            request.setToCardId(1L); // Same card
+            request.setToCardId(1L); 
             request.setAmount(new BigDecimal("100.50"));
 
             when(userService.getUserByUsername("testuser")).thenReturn(user);
@@ -424,7 +424,7 @@ class TransferControllerTest {
             when(transferService.transferBetweenCards(fromCard, fromCard, request.getAmount()))
                     .thenThrow(new IllegalArgumentException("Cannot transfer to same card"));
 
-            // When & Then
+            
             assertThatThrownBy(() -> transferController.transfer("testuser", request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Cannot transfer to same card");
@@ -433,7 +433,7 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should handle inactive cards")
         void transfer_inactiveCards_throwsException() {
-            // Given
+            
             Card inactiveCard = Card.builder()
                     .id(1L)
                     .user(user)
@@ -451,7 +451,7 @@ class TransferControllerTest {
             when(transferService.transferBetweenCards(inactiveCard, toCard, request.getAmount()))
                     .thenThrow(new IllegalStateException("Both cards must be active"));
 
-            // When & Then
+            
             assertThatThrownBy(() -> transferController.transfer("testuser", request))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Both cards must be active");
@@ -465,18 +465,18 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should have proper getters and setters")
         void transferRequest_gettersAndSetters_workCorrectly() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
             Long fromCardId = 1L;
             Long toCardId = 2L;
             BigDecimal amount = new BigDecimal("100.50");
 
-            // When
+            
             request.setFromCardId(fromCardId);
             request.setToCardId(toCardId);
             request.setAmount(amount);
 
-            // Then
+            
             assertThat(request.getFromCardId()).isEqualTo(fromCardId);
             assertThat(request.getToCardId()).isEqualTo(toCardId);
             assertThat(request.getAmount()).isEqualTo(amount);
@@ -485,15 +485,15 @@ class TransferControllerTest {
         @Test
         @DisplayName("Should handle null values")
         void transferRequest_nullValues_workCorrectly() {
-            // Given
+            
             TransferController.TransferRequest request = new TransferController.TransferRequest();
 
-            // When
+            
             request.setFromCardId(null);
             request.setToCardId(null);
             request.setAmount(null);
 
-            // Then
+            
             assertThat(request.getFromCardId()).isNull();
             assertThat(request.getToCardId()).isNull();
             assertThat(request.getAmount()).isNull();

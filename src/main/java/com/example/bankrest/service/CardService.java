@@ -14,62 +14,28 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 
-/**
- * Сервис для управления банковскими картами.
- * Обеспечивает создание, блокировку, активацию, удаление и получение карт.
- */
 @Service
 @RequiredArgsConstructor
 public class CardService {
     private final CardRepository cardRepository;
     private final EncryptionService encryptionService;
+    private final CardOperationHistoryService operationHistoryService;
 
-    /**
-     * Получить страницы карт пользователя с пагинацией.
-     *
-     * @param user пользователь
-     * @param pageable параметры пагинации
-     * @return страница карт
-     */
     public Page<Card> getCardsByUser(User user, Pageable pageable) {
         return cardRepository.findByUser(user, pageable);
     }
 
-    /**
-     * Получить карту по идентификатору.
-     *
-     * @param id идентификатор карты
-     * @return карта
-     * @throws CardNotFoundException если карта не найдена
-     */
     public Card getCardById(Long id) {
         return cardRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException(id));
     }
 
-    /**
-     * Получить карту по идентификатору (Optional).
-     *
-     * @param id идентификатор карты
-     * @return Optional с картой или пустой, если не найдена
-     */
     public Optional<Card> findCardById(Long id) {
         return cardRepository.findById(id);
     }
 
-    /**
-     * Создать новую карту с шифрованием номера и маскированием.
-     *
-     * @param cardNumber номер карты в открытом виде
-     * @param owner владелец карты
-     * @param expiryDate дата окончания действия
-     * @param user владелец (пользователь)
-     * @return созданная карта
-     * @throws IllegalArgumentException если параметры некорректны
-     */
     @Transactional
     public Card createCard(String cardNumber, String owner, LocalDate expiryDate, User user) {
-        // Validate input parameters using utility methods
         ValidationUtils.validateCardNumber(cardNumber);
         ValidationUtils.validateNotNullOrEmpty(owner, "Owner");
         ValidationUtils.validateNotNull(expiryDate, "Expiry date");
@@ -87,51 +53,75 @@ public class CardService {
                 .balance(BigDecimal.ZERO)
                 .user(user)
                 .build();
-        return cardRepository.save(card);
+        Card savedCard = cardRepository.save(card);
+        
+        operationHistoryService.recordOperation(
+                savedCard,
+                CardOperationHistory.OperationType.CREATE,
+                null,
+                null,
+                CardStatus.ACTIVE,
+                "Card created"
+        );
+        
+        return savedCard;
     }
 
-    /**
-     * Заблокировать карту по идентификатору.
-     *
-     * @param cardId идентификатор карты
-     * @throws CardNotFoundException если карта не найдена
-     */
     @Transactional
     public void blockCard(Long cardId) {
         Card card = getCardById(cardId);
+        CardStatus previousStatus = card.getStatus();
         card.setStatus(CardStatus.BLOCKED);
         cardRepository.save(card);
+        
+        operationHistoryService.recordOperation(
+                card,
+                CardOperationHistory.OperationType.BLOCK,
+                null,
+                previousStatus,
+                CardStatus.BLOCKED,
+                "Card blocked"
+        );
     }
 
-    /**
-     * Активировать карту по идентификатору.
-     *
-     * @param cardId идентификатор карты
-     * @throws CardNotFoundException если карта не найдена
-     */
     @Transactional
     public void activateCard(Long cardId) {
         Card card = getCardById(cardId);
+        CardStatus previousStatus = card.getStatus();
         card.setStatus(CardStatus.ACTIVE);
         cardRepository.save(card);
+        
+        operationHistoryService.recordOperation(
+                card,
+                CardOperationHistory.OperationType.ACTIVATE,
+                null,
+                previousStatus,
+                CardStatus.ACTIVE,
+                "Card activated"
+        );
     }
 
-    /**
-     * Удалить карту по идентификатору.
-     *
-     * @param cardId идентификатор карты
-     */
     @Transactional
     public void deleteCard(Long cardId) {
+        Card card = getCardById(cardId);
+        CardStatus previousStatus = card.getStatus();
+        
+        operationHistoryService.recordOperation(
+                card,
+                CardOperationHistory.OperationType.DELETE,
+                null,
+                previousStatus,
+                null,
+                "Card deleted"
+        );
+        
         cardRepository.deleteById(cardId);
     }
 
-    /**
-     * Маскирует номер карты, оставляя видимыми только последние 4 цифры.
-     *
-     * @param cardNumber номер карты в открытом виде
-     * @return замаскированный номер карты
-     */
+    public Page<Card> getAllCards(Pageable pageable) {
+        return cardRepository.findAll(pageable);
+    }
+
     private String maskCardNumber(String cardNumber) {
         String digitsOnly = cardNumber.replaceAll("\\D", "");
         if (digitsOnly.length() < 4) {
@@ -141,12 +131,6 @@ public class CardService {
         return "**** **** **** " + last4;
     }
 
-    /**
-     * Обновляет баланс карты.
-     *
-     * @param card карта
-     * @param newBalance новый баланс
-     */
     @Transactional
     public void updateCardBalance(Card card, BigDecimal newBalance) {
         card.setBalance(newBalance);

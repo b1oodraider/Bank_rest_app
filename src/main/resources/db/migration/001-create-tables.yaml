@@ -231,22 +231,14 @@ databaseChangeLog:
       id: 6
       author: developer
       changes:
-        - addCheckConstraint:
-            tableName: cards
-            constraintName: chk_card_status
-            checkCondition: status IN ('ACTIVE', 'BLOCKED', 'EXPIRED')
-        - addCheckConstraint:
-            tableName: cards
-            constraintName: chk_card_balance
-            checkCondition: balance >= 0
-        - addCheckConstraint:
-            tableName: transfers
-            constraintName: chk_transfer_amount
-            checkCondition: amount > 0
-        - addCheckConstraint:
-            tableName: transfers
-            constraintName: chk_transfer_different_cards
-            checkCondition: from_card_id != to_card_id
+        - sql:
+            sql: ALTER TABLE cards ADD CONSTRAINT chk_card_status CHECK (status IN ('ACTIVE', 'BLOCKED', 'EXPIRED'))
+        - sql:
+            sql: ALTER TABLE cards ADD CONSTRAINT chk_card_balance CHECK (balance >= 0)
+        - sql:
+            sql: ALTER TABLE transfers ADD CONSTRAINT chk_transfer_amount CHECK (amount > 0)
+        - sql:
+            sql: ALTER TABLE transfers ADD CONSTRAINT chk_transfer_different_cards CHECK (from_card_id != to_card_id)
 
   - changeSet:
       id: 7
@@ -259,8 +251,8 @@ databaseChangeLog:
               BEGIN
                   NEW.updated_at = CURRENT_TIMESTAMP;
                   RETURN NEW;
-              END;
-              $$ language 'plpgsql';
+              END
+              $$ LANGUAGE plpgsql;
         - sql:
             sql: CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
         - sql:

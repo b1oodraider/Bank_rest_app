@@ -1,25 +1,22 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/bankdb
+    url: jdbc:postgresql://db:5432/bankdb
     username: postgres
     password: postgres
 
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
   liquibase:
     change-log: classpath:db/migration/db.changelog-master.yaml
     drop-first: false
-    contexts: dev
-  sql:
-    init:
-      platform: org.hibernate.dialect.PostgreSQLDialect
+    contexts: prod
 
 springdoc:
   api-docs:
@@ -29,13 +26,14 @@ springdoc:
 
 app:
   jwt:
-    secret: YourSuperSecretKeyForJwtSigningMustBeLongEnough12345
-    expiration-ms: 86400000
+    secret: ${APP_JWT_SECRET:YourSuperSecretKeyForJwtSigningMustBeLongEnough12345}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
 
   encryption:
-    secret: 1234567890123456
+    secret: ${APP_ENCRYPTION_SECRET:1234567890123456}
 
 logging:
   level:
     liquibase: INFO
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
+    root: WARN 

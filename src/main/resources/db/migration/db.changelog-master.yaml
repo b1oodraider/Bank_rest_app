@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
-      file: db/migration/001-create-tables.yaml 
+      file: db/migration/001-create-tables.yaml
+  - include:
+      file: db/migration/002-add-card-operations.yaml 

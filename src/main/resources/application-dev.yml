@@ -1,0 +1,7 @@
+spring:
+  liquibase:
+    enabled: false
+
+logging:
+  level:
+    liquibase: WARN 

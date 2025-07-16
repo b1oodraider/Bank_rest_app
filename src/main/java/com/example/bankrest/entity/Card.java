@@ -18,13 +18,13 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "encrypted_number", nullable = false, unique = true, length = 255)
-    private String encryptedNumber; // encrypted full number
+    @Column(name = "encrypted_number", nullable = false, unique = true)
+    private String encryptedNumber; 
 
     @Column(name = "masked_number", nullable = false, length = 19)
-    private String maskedNumber; // **** **** **** 1234
+    private String maskedNumber; 
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String owner;
 
     @Column(name = "expiry_date", nullable = false)

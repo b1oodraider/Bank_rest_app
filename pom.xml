@@ -20,6 +20,7 @@
         <swagger.version>3.0.0</swagger.version>
         <postgresql.version>42.7.7</postgresql.version>
         <springdoc.version>2.9.0</springdoc.version>
+        <lombok.version>1.18.34</lombok.version>
     </properties>
 
     <dependencyManagement>
@@ -138,6 +139,25 @@
 
     <build>
         <plugins>
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.12.1</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <parameters>true</parameters>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            
             <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -151,13 +171,13 @@
                     </excludes>
                 </configuration>
             </plugin>
+            
             <!-- Maven Surefire Plugin with Mockito Agent Configuration -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-
                     <systemPropertyVariables>
                         <jdk.instrument.traceUsage>false</jdk.instrument.traceUsage>
                     </systemPropertyVariables>

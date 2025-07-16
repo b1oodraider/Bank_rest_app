@@ -1,5 +1,7 @@
 package com.example.bankrest.exception;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +52,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
         log.error("Access denied: {}", ex.getMessage());
-        return createErrorResponse("Access denied", HttpStatus.FORBIDDEN);
+        return createErrorResponse("Access denied: insufficient privileges", HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -72,6 +74,76 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentialsException(org.springframework.security.authentication.BadCredentialsException ex) {
+        log.error("Authentication failed: {}", ex.getMessage());
+        return createErrorResponse("Invalid username or password", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.error("Message not readable: {}", ex.getMessage());
+        String message = "Invalid request format";
+        if (ex.getMessage() != null && ex.getMessage().contains("Cannot deserialize")) {
+            message = "Invalid data format in request body";
+        }
+        return createErrorResponse(message, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupportedException(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        log.error("Method not supported: {}", ex.getMessage());
+        return createErrorResponse("HTTP method not supported: " + ex.getMethod(), HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @ExceptionHandler(org.springframework.expression.spel.SpelEvaluationException.class)
+    public ResponseEntity<ErrorResponse> handleSpelEvaluationException(org.springframework.expression.spel.SpelEvaluationException ex) {
+        log.error("SpEL evaluation error: {}", ex.getMessage());
+        return createErrorResponse("Authentication error: invalid token format", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(io.jsonwebtoken.JwtException.class)
+    public ResponseEntity<ErrorResponse> handleJwtException(io.jsonwebtoken.JwtException ex) {
+        log.error("JWT error: {}", ex.getMessage());
+        return createErrorResponse("Invalid or expired token", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(io.jsonwebtoken.ExpiredJwtException.class)
+    public ResponseEntity<ErrorResponse> handleExpiredJwtException(io.jsonwebtoken.ExpiredJwtException ex) {
+        log.error("JWT expired: {}", ex.getMessage());
+        return createErrorResponse("Token has expired", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(io.jsonwebtoken.MalformedJwtException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedJwtException(io.jsonwebtoken.MalformedJwtException ex) {
+        log.error("Malformed JWT: {}", ex.getMessage());
+        return createErrorResponse("Invalid token format", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(jakarta.validation.ConstraintViolationException ex) {
+        log.error("Validation constraint violation: {}", ex.getMessage());
+        StringBuilder message = new StringBuilder("Validation failed: ");
+        ex.getConstraintViolations().forEach(violation -> 
+            message.append(violation.getPropertyPath()).append(": ").append(violation.getMessage()).append("; ")
+        );
+        return createErrorResponse(message.toString().trim(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException ex) {
+        log.error("Data integrity violation: {}", ex.getMessage());
+        String message = "Data integrity error";
+        if (ex.getMessage() != null && ex.getMessage().contains("duplicate key")) {
+            message = "Resource already exists with the same unique identifier";
+        } else if (ex.getMessage() != null && ex.getMessage().contains("foreign key")) {
+            message = "Cannot delete resource: it is referenced by other data";
+        }
+        return createErrorResponse(message, HttpStatus.CONFLICT);
+    }
+
+
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error: ", ex);
@@ -89,6 +161,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(errorResponse);
     }
 
+    @Setter
+    @Getter
     public static class ErrorResponse {
         private LocalDateTime timestamp;
         private int status;
@@ -103,16 +177,6 @@ public class GlobalExceptionHandler {
             this.error = error;
             this.message = message;
         }
-
-        // Getters and setters
-        public LocalDateTime getTimestamp() { return timestamp; }
-        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
-        public int getStatus() { return status; }
-        public void setStatus(int status) { this.status = status; }
-        public String getError() { return error; }
-        public void setError(String error) { this.error = error; }
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
 
         public static ErrorResponseBuilder builder() {
             return new ErrorResponseBuilder();
@@ -150,6 +214,8 @@ public class GlobalExceptionHandler {
         }
     }
 
+    @Setter
+    @Getter
     public static class ValidationErrorResponse {
         private LocalDateTime timestamp;
         private int status;
@@ -164,16 +230,6 @@ public class GlobalExceptionHandler {
             this.error = error;
             this.details = details;
         }
-
-        // Getters and setters
-        public LocalDateTime getTimestamp() { return timestamp; }
-        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
-        public int getStatus() { return status; }
-        public void setStatus(int status) { this.status = status; }
-        public String getError() { return error; }
-        public void setError(String error) { this.error = error; }
-        public Map<String, String> getDetails() { return details; }
-        public void setDetails(Map<String, String> details) { this.details = details; }
 
         public static ValidationErrorResponseBuilder builder() {
             return new ValidationErrorResponseBuilder();

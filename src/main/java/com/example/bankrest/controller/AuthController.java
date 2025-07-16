@@ -7,15 +7,11 @@ import jakarta.validation.Valid;
 import lombok.*;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.*;
+import org.springframework.security.authentication.*;    
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.constraints.*;
 import java.util.Set;
 
-/**
- * Контроллер для аутентификации пользователей.
- * Позволяет получить JWT токен по логину и паролю.
- */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -25,32 +21,35 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserService userService;
 
-    /**
-     * Аутентификация пользователя и выдача JWT токена.
-     *
-     * @param request объект с username и password
-     * @return JWT токен
-     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid AuthRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
 
-        User user = userService.getUserByUsername(request.getUsername());
+            User user = userService.getUserByUsername(request.getUsername());
 
-        Set<String> roles = user.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
-        String token = jwtUtil.generateToken(user.getUsername(), roles);
+            Set<String> roles = user.getRoles().stream().map(Enum::name).collect(java.util.stream.Collectors.toSet());
+            String token = jwtUtil.generateToken(user.getUsername(), roles);
 
-        return ResponseEntity.ok(new AuthResponse(token));
+            return ResponseEntity.ok(new AuthResponse(token));
+        } catch (BadCredentialsException e) {
+            throw new BadCredentialsException("Invalid username or password");
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     @Data
     public static class AuthRequest {
-        @NotBlank(message = "Username is required")
+        @NotBlank(message = "Username is required and cannot be empty")
+        @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+        @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers, and underscores")
         private String username;
         
-        @NotBlank(message = "Password is required")
+        @NotBlank(message = "Password is required and cannot be empty")
+        @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
         private String password;
     }
 

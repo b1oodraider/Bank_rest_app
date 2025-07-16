@@ -22,9 +22,13 @@ services:
     ports:
       - "8080:8080"
     environment:
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/bankdb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      APP_JWT_SECRET: YourSuperSecretKeyForJwtSigningMustBeLongEnough12345
+      APP_JWT_EXPIRATION_MS: 86400000
+      APP_ENCRYPTION_SECRET: 1234567890123456
     depends_on:
       db:
         condition: service_healthy
