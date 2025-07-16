@@ -25,8 +25,10 @@ class UserServiceTest {
     private UserService userService;
 
     @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
+    void setup() throws Exception {
+        try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
+            // Mock initialization complete
+        }
     }
 
     @Test

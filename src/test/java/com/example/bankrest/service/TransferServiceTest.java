@@ -22,14 +22,15 @@ class TransferServiceTest {
     @InjectMocks
     private TransferService transferService;
 
-    private User user;
     private Card fromCard;
     private Card toCard;
 
     @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
-        user = User.builder().id(1L).build();
+    void setup() throws Exception {
+        try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
+            // Mock initialization complete
+        }
+        User user = User.builder().id(1L).build();
         fromCard = Card.builder()
                 .id(1L)
                 .user(user)
