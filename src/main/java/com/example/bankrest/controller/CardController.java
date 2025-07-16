@@ -133,21 +133,21 @@ public class CardController {
 
     @Data
     public static class CreateCardRequest {
-        @NotBlank(message = "Card number is required and cannot be empty")
+        @NotBlank(message = "Card number is required")
         @Pattern(regexp = "^\\d{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{4}$", 
                 message = "Card number must be exactly 16 digits with optional spaces (e.g., 1234 5678 9012 3456)")
         private String cardNumber;
 
-        @NotBlank(message = "Owner name is required and cannot be empty")
+        @NotBlank(message = "Owner name is required")
         @Size(min = 2, max = 100, message = "Owner name must be between 2 and 100 characters")
         @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Owner name can only contain letters and spaces")
         private String owner;
 
         @NotNull(message = "Expiry date is required")
-        @Future(message = "Expiry date must be in the future (at least tomorrow)")
+        @Future(message = "Expiry date must be in the future")
         private LocalDate expiryDate;
 
-        @NotBlank(message = "Username is required and cannot be empty")
+        @NotBlank(message = "Username is required")
         private String username;
     }
 }

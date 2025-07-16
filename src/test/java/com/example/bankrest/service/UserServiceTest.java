@@ -28,6 +28,7 @@ class UserServiceTest {
     void setup() throws Exception {
         try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
             // Mock initialization complete
+            assert mocks != null;
         }
     }
 

@@ -33,6 +33,7 @@ class AuthControllerTest {
     void setup() throws Exception {
         try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
             // Mock initialization complete
+            assert mocks != null;
         }
     }
 
@@ -57,6 +58,7 @@ class AuthControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         assertThat(response.getBody()).isInstanceOf(AuthController.AuthResponse.class);
         AuthController.AuthResponse authResponse = (AuthController.AuthResponse) response.getBody();
+        assert authResponse != null;
         assertThat(authResponse.getToken()).isEqualTo("token");
     }
 }

@@ -29,6 +29,7 @@ class TransferServiceTest {
     void setup() throws Exception {
         try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
             // Mock initialization complete
+            assert mocks != null;
         }
         User user = User.builder().id(1L).build();
         fromCard = Card.builder()

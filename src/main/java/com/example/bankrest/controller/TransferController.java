@@ -48,7 +48,8 @@ public class TransferController {
         @NotNull(message = "To card ID is required")
         private Long toCardId;
         
-        @NotNull(message = "Transfer amount is required")
+        @NotNull(message = "Amount is required")
+        @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
         private BigDecimal amount;
         
         public void validate() {

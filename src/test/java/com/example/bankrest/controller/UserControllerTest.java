@@ -12,7 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -33,6 +32,7 @@ class UserControllerTest {
     void setup() throws Exception {
         try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
             // Mock initialization complete
+            assert mocks != null;
         }
         
         testUser = User.builder()

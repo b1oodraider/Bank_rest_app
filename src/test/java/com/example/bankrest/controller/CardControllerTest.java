@@ -56,8 +56,9 @@ class CardControllerTest {
 
     @BeforeEach
     void setUp() {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            validator = factory.getValidator();
+        }
         
         user = User.builder()
                 .id(1L)
@@ -84,7 +85,7 @@ class CardControllerTest {
         @Test
         @DisplayName("Should return user cards with pagination")
         void getUserCards_returnsPage() {
-            Page<Card> page = new PageImpl<>(Arrays.asList(card));
+            Page<Card> page = new PageImpl<>(Collections.singletonList(card));
             when(userService.getUserByUsername("testuser")).thenReturn(user);
             when(cardService.getCardsByUser(eq(user), any(Pageable.class))).thenReturn(page);
 
@@ -114,7 +115,7 @@ class CardControllerTest {
         @Test
         @DisplayName("Should handle custom pagination parameters")
         void getUserCards_customPagination_usesCorrectParameters() {
-            Page<Card> page = new PageImpl<>(Arrays.asList(card));
+            Page<Card> page = new PageImpl<>(Collections.singletonList(card));
             when(userService.getUserByUsername("testuser")).thenReturn(user);
             when(cardService.getCardsByUser(eq(user), any(Pageable.class))).thenReturn(page);
 
@@ -178,8 +179,8 @@ class CardControllerTest {
         }
 
         @Test
-        @DisplayName("Should propagate UserNotFoundException")
-        void createCard_userNotFound_throwsException() {
+        @DisplayName("Should handle UserNotFoundException")
+        void createCard_userNotFound_returnsBadRequest() {
             
             CardController.CreateCardRequest request = new CardController.CreateCardRequest();
             request.setCardNumber("1234567890123456");
@@ -190,9 +191,10 @@ class CardControllerTest {
             when(userService.getUserByUsername("testuser")).thenThrow(new UserNotFoundException("User not found"));
 
             
-            assertThatThrownBy(() -> cardController.createCard(request))
-                    .isInstanceOf(UserNotFoundException.class)
-                    .hasMessage("User not found");
+            ResponseEntity<?> response = cardController.createCard(request);
+            
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).isEqualTo("User not found: testuser");
         }
 
         @Test
@@ -271,7 +273,7 @@ class CardControllerTest {
         @Test
         @DisplayName("Should successfully delete card")
         void deleteCard_successfulDeletion_returnsOk() {
-            doNothing().when(cardService).blockCard(1L);
+            doNothing().when(cardService).deleteCard(1L);
 
             ResponseEntity<Void> response = cardController.deleteCard(1L);
 
@@ -302,6 +304,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner("Test User");
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
 
@@ -315,6 +318,7 @@ class CardControllerTest {
             request.setCardNumber("1234 5678 9012 3456");
             request.setOwner("Test User");
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
 
@@ -328,6 +332,7 @@ class CardControllerTest {
             request.setCardNumber(null);
             request.setOwner("Test User");
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
 
@@ -342,12 +347,13 @@ class CardControllerTest {
             request.setCardNumber("   ");
             request.setOwner("Test User");
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
 
             assertThat(violations).hasSize(2);
             assertThat(violations).anyMatch(v -> v.getMessage().equals("Card number is required"));
-            assertThat(violations).anyMatch(v -> v.getMessage().equals("Card number must be 16 digits with optional spaces"));
+            assertThat(violations).anyMatch(v -> v.getMessage().equals("Card number must be exactly 16 digits with optional spaces (e.g., 1234 5678 9012 3456)"));
         }
 
         @Test
@@ -357,12 +363,13 @@ class CardControllerTest {
             request.setCardNumber("123456789012345");
             request.setOwner("Test User");
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
 
             assertThat(violations).hasSize(1);
             assertThat(violations.iterator().next().getMessage())
-                    .isEqualTo("Card number must be 16 digits with optional spaces");
+                    .isEqualTo("Card number must be exactly 16 digits with optional spaces (e.g., 1234 5678 9012 3456)");
         }
 
         @Test
@@ -373,6 +380,7 @@ class CardControllerTest {
             request.setCardNumber("123456789012345a");
             request.setOwner("Test User");
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -380,7 +388,7 @@ class CardControllerTest {
             
             assertThat(violations).hasSize(1);
             assertThat(violations.iterator().next().getMessage())
-                    .isEqualTo("Card number must be 16 digits with optional spaces");
+                    .isEqualTo("Card number must be exactly 16 digits with optional spaces (e.g., 1234 5678 9012 3456)");
         }
 
         @Test
@@ -391,6 +399,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner(null);
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -408,6 +417,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner("   ");
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -425,6 +435,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner("A");
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -443,6 +454,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner(String.join("", Collections.nCopies(101, "A"))); 
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -461,6 +473,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner("Test User");
             request.setExpiryDate(null);
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -478,6 +491,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner("Test User");
             request.setExpiryDate(LocalDate.now().minusDays(1));
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -495,6 +509,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner("Test User");
             request.setExpiryDate(LocalDate.now());
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -512,6 +527,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner("AB"); 
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -528,6 +544,7 @@ class CardControllerTest {
             request.setCardNumber("1234567890123456");
             request.setOwner(String.join("", Collections.nCopies(100, "A"))); 
             request.setExpiryDate(LocalDate.now().plusYears(2));
+            request.setUsername("testuser");
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
@@ -591,47 +608,35 @@ class CardControllerTest {
             request.setCardNumber(null);
             request.setOwner(null);
             request.setExpiryDate(null);
+            request.setUsername(null);
 
             
             Set<ConstraintViolation<CardController.CreateCardRequest>> violations = validator.validate(request);
 
             
-            assertThat(violations).hasSize(3);
+            assertThat(violations).hasSize(4);
             assertThat(violations).anyMatch(v -> v.getMessage().equals("Card number is required"));
             assertThat(violations).anyMatch(v -> v.getMessage().equals("Owner name is required"));
             assertThat(violations).anyMatch(v -> v.getMessage().equals("Expiry date is required"));
+            assertThat(violations).anyMatch(v -> v.getMessage().equals("Username is required"));
         }
 
         @Test
         @DisplayName("Should handle pagination with zero size")
-        void getUserCards_zeroSize_usesDefaultPagination() {
+        void getUserCards_zeroSize_throwsException() {
             
-            Page<Card> page = new PageImpl<>(Collections.emptyList());
-            when(userService.getUserByUsername("testuser")).thenReturn(user);
-            when(cardService.getCardsByUser(eq(user), any(Pageable.class))).thenReturn(page);
-
-            
-            ResponseEntity<Page<Card>> response = cardController.getUserCards("testuser", 0, 0);
-
-            
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            verify(cardService).getCardsByUser(user, PageRequest.of(0, 10)); 
+            assertThatThrownBy(() -> cardController.getUserCards("testuser", 0, 0))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Page size must be between 1 and 100");
         }
 
         @Test
         @DisplayName("Should handle negative page number")
-        void getUserCards_negativePage_usesCorrectPagination() {
+        void getUserCards_negativePage_throwsException() {
             
-            Page<Card> page = new PageImpl<>(Collections.emptyList());
-            when(userService.getUserByUsername("testuser")).thenReturn(user);
-            when(cardService.getCardsByUser(eq(user), any(Pageable.class))).thenReturn(page);
-
-            
-            ResponseEntity<Page<Card>> response = cardController.getUserCards("testuser", -1, 10);
-
-            
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            verify(cardService).getCardsByUser(user, PageRequest.of(0, 10)); 
+            assertThatThrownBy(() -> cardController.getUserCards("testuser", -1, 10))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Page number must be 0 or greater");
         }
     }
 }

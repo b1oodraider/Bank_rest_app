@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,9 @@ class CardServiceTest {
     @Mock
     private EncryptionService encryptionService;
 
+    @Mock
+    private CardOperationHistoryService operationHistoryService;
+
     @InjectMocks
     private CardService cardService;
 
@@ -35,6 +39,7 @@ class CardServiceTest {
     void setup() throws Exception {
         try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
             // Mock initialization complete
+            assert mocks != null;
         }
     }
 
@@ -44,6 +49,8 @@ class CardServiceTest {
         String encrypted = "encrypted";
         when(encryptionService.encrypt(cardNumber)).thenReturn(encrypted);
         when(cardRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(operationHistoryService.recordOperation(any(), any(), any(), any(), any(), any()))
+                .thenReturn(CardOperationHistory.builder().id(1L).build());
 
         User user = User.builder().id(1L).build();
         Card card = cardService.createCard(cardNumber, "Owner", LocalDate.now().plusYears(1), user);
@@ -91,6 +98,8 @@ class CardServiceTest {
         Card card = Card.builder().id(1L).status(CardStatus.ACTIVE).build();
         when(cardRepository.findById(1L)).thenReturn(Optional.of(card));
         when(cardRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(operationHistoryService.recordOperation(any(), any(), any(), any(), any(), any()))
+                .thenReturn(CardOperationHistory.builder().id(1L).build());
 
         cardService.blockCard(1L);
 
@@ -110,6 +119,8 @@ class CardServiceTest {
         Card card = Card.builder().id(1L).status(CardStatus.BLOCKED).build();
         when(cardRepository.findById(1L)).thenReturn(Optional.of(card));
         when(cardRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(operationHistoryService.recordOperation(any(), any(), any(), any(), any(), any()))
+                .thenReturn(CardOperationHistory.builder().id(1L).build());
 
         cardService.activateCard(1L);
 
@@ -126,6 +137,10 @@ class CardServiceTest {
 
     @Test
     void deleteCard_callsRepositoryDelete() {
+        Card card = Card.builder().id(1L).status(CardStatus.ACTIVE).build();
+        when(cardRepository.findById(1L)).thenReturn(Optional.of(card));
+        when(operationHistoryService.recordOperation(any(), any(), any(), any(), any(), any()))
+                .thenReturn(CardOperationHistory.builder().id(1L).build());
         doNothing().when(cardRepository).deleteById(1L);
 
         cardService.deleteCard(1L);
@@ -166,7 +181,7 @@ class CardServiceTest {
     void getCardsByUser_returnsPage() {
         User user = User.builder().id(1L).build();
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Card> expectedPage = new PageImpl<>(Arrays.asList(
+        Page<Card> expectedPage = new PageImpl<>(Collections.singletonList(
                 Card.builder().id(1L).user(user).build()
         ));
         

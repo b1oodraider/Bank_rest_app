@@ -60,8 +60,9 @@ class TransferControllerTest {
     @BeforeEach
     void setUp() {
         
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            validator = factory.getValidator();
+        }
         
         
         user = User.builder()
@@ -271,16 +272,10 @@ class TransferControllerTest {
             request.setToCardId(2L);
             request.setAmount(new BigDecimal("-100.50")); 
 
-            when(userService.getUserByUsername("testuser")).thenReturn(user);
-            when(cardService.getCardById(1L)).thenReturn(fromCard);
-            when(cardService.getCardById(2L)).thenReturn(toCard);
-            when(transferService.transferBetweenCards(fromCard, toCard, request.getAmount()))
-                    .thenThrow(new IllegalArgumentException("Invalid amount"));
-
             
             assertThatThrownBy(() -> transferController.transfer("testuser", request))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Invalid amount");
+                    .hasMessage("Transfer amount must be at least 0.01");
         }
     }
 
